@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # HAProxy Master Node
+  haproxy-master:
+    build:
+      context: ./infrastructure/haproxy-keepalived
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "8080:8080"
+    environment:
+      - KEEPALIVED_STATE=MASTER
+      - KEEPALIVED_PRIORITY=150
+      - KEEPALIVED_VIRTUAL_IP=192.168.100.100
+    cap_add:
+      - NET_ADMIN
+      - NET_BROADCAST
+      - NET_RAW
+    networks:
+      haproxy-net:
+        ipv4_address: 192.168.100.10
+
+  # HAProxy Backup Node  
+  haproxy-backup:
+    build:
+      context: ./infrastructure/haproxy-keepalived
+      dockerfile: Dockerfile
+    ports:
+      - "81:80"
+      - "8081:8080"
+    environment:
+      - KEEPALIVED_STATE=BACKUP
+      - KEEPALIVED_PRIORITY=100
+      - KEEPALIVED_VIRTUAL_IP=192.168.100.100
+    cap_add:
+      - NET_ADMIN
+      - NET_BROADCAST
+      - NET_RAW
+    networks:
+      haproxy-net:
+        ipv4_address: 192.168.100.11
+
+  # DataDog Agent
+  datadog-agent:
+    image: datadog/agent:latest
+    environment:
+      - DD_API_KEY=f3329703b0d4f5d447ff820847c092e8
+      - DD_SITE=us5.datadoghq.com
+      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+      
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc/:/host/proc/:ro
+      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+      - ./datadog/conf.d:/etc/datadog-agent/conf.d:ro
+    networks:
+      - haproxy-net
+
+  # Existing services (sin cambios)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://user:password@db:5432/mydb
+    depends_on:
+      - db
+    networks:
+      - haproxy-net
+    deploy:
+      replicas: 2  # Multiple instances for load balancing
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+    networks:
+      - haproxy-net
+
+  db:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=mydb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - haproxy-net
+
+networks:
+  haproxy-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
+
+volumes:
+  postgres_data:

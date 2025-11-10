@@ -1,0 +1,16 @@
+init_config:
+
+instances:
+  - url: http://haproxy-master:8080/stats
+    username: admin
+    password: datadog123
+    tags:
+      - haproxy:master
+      - env:production
+      
+  - url: http://haproxy-backup:8081/stats  
+    username: admin
+    password: datadog123
+    tags:
+      - haproxy:backup
+      - env:production

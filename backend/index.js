@@ -1,28 +1,42 @@
-// backend/index.js
-const express = require('express'); // Import Express for building the API
-const { Pool } = require('pg'); // Import PostgreSQL client
-const app = express(); // Create an Express app
-app.use(express.json()); // Parse JSON request bodies
+const express = require('express');
+const { Pool } = require('pg');
+const app = express();
+const cors = require('cors');
 
-// Connect to PostgreSQL using DATABASE_URL from environment variables
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+app.use(cors());  // ← NUEVO
+app.use(express.json());
 
-// Health check endpoint for Kubernetes probes and monitoring
+// Connect to PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || 'postgresql://user:password@db:5432/mydb'
+});
+
+// Health check endpoint
 app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
-// Get all users from the database
+// Get all users
 app.get('/users', async (req, res) => {
-  const { rows } = await pool.query('SELECT * FROM users'); // Query the users table
-  res.json(rows); // Send users as JSON
+  try {
+    const { rows } = await pool.query('SELECT * FROM users');
+    res.json(rows);
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// Add a new user to the database
+// Add a new user
 app.post('/users', async (req, res) => {
-  const { name } = req.body; // Get name from request body
-  // Insert user and return the new record
-  const { rows } = await pool.query('INSERT INTO users(name) VALUES($1) RETURNING *', [name]);
-  res.json(rows[0]); // Send the new user as JSON
+  try {
+    const { name } = req.body;
+    const { rows } = await pool.query('INSERT INTO users(name) VALUES($1) RETURNING *', [name]);
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Database error:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
-// Start the server on port 3000
-app.listen(3000, () => console.log('Backend running on port 3000'));
+// Start server on port 3001 to avoid conflict
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));

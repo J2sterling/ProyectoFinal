@@ -1,0 +1,24 @@
+init_config:
+
+instances:
+  - url: http://192.168.100.10:8080/stats
+    username: admin
+    password: datadog123
+    collect_aggregates_only: false
+    collect_status_metrics: true
+    tag_service_by_url: true
+    tags:
+      - haproxy:master
+      - env:production
+      - cluster:proyectofinal
+
+  - url: http://192.168.100.10:8080/stats
+    username: admin
+    password: datadog123
+    collect_aggregates_only: false
+    collect_status_metrics: true
+    tag_service_by_url: true
+    tags:
+      - haproxy:backup
+      - env:production
+      - cluster:proyectofinal
