@@ -1,24 +1,57 @@
 init_config:
 
 instances:
+  # HAProxy Master - CORRECTO (puerto 8080)
   - url: http://192.168.100.10:8080/stats
     username: admin
     password: datadog123
     collect_aggregates_only: false
     collect_status_metrics: true
+    collect_status_metrics_by_host: true
+    collect_backend_metrics: true
+    collect_frontend_metrics: true
+    collect_server_metrics: true
+    collect_server_metrics_by_service: true
+    collect_detailed_metrics: true
     tag_service_by_url: true
+    enable_service_check: true
     tags:
       - haproxy:master
+      - haproxy_node:primary
       - env:production
       - cluster:proyectofinal
+      - role:load_balancer
+      - service:haproxy
+      - ip:192.168.100.10
 
-  - url: http://192.168.100.10:8080/stats
+  # HAProxy Backup - CORREGIR: cambiar puerto 81 por 8080
+  - url: http://192.168.100.11:8080/stats   # ⚠️ CAMBIADO de :81 a :8080
     username: admin
     password: datadog123
     collect_aggregates_only: false
     collect_status_metrics: true
+    collect_status_metrics_by_host: true
+    collect_backend_metrics: true
+    collect_frontend_metrics: true
+    collect_server_metrics: true
+    collect_server_metrics_by_service: true
+    collect_detailed_metrics: true
     tag_service_by_url: true
+    enable_service_check: true
     tags:
       - haproxy:backup
+      - haproxy_node:secondary
+      - env:production
+      - cluster:proyectofinal
+      - role:load_balancer
+      - service:haproxy
+      - ip:192.168.100.11
+
+logs:
+  - type: file
+    path: /var/log/haproxy.log
+    service: haproxy
+    source: haproxy
+    tags:
       - env:production
       - cluster:proyectofinal

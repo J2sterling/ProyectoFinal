@@ -1,0 +1,16 @@
+init_config:
+
+instances:
+  - command: /usr/sbin/keepalived
+    arguments: ["-n", "-l"]
+    search_string: "Keepalived"
+    tags:
+      - env:production
+      - cluster:proyectofinal
+      - service:keepalived
+
+logs:
+  - type: file
+    path: /var/log/keepalived.log
+    service: keepalived
+    source: keepalived

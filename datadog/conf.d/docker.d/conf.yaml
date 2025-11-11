@@ -1,0 +1,19 @@
+init_config:
+
+instances:
+  - url: "unix://var/run/docker.sock"
+    new_tag_names: true
+    collect_container_size: true
+    collect_container_size_frequency: 5
+    collect_image_size: true
+    collect_image_stats: true
+    collect_volume_count: true
+    tags:
+      - env:production
+      - cluster:proyectofinal
+      - role:haproxy_cluster
+
+logs:
+  - type: docker
+    service: docker
+    source: docker

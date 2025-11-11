@@ -43,19 +43,58 @@ services:
 
   # DataDog Agent
   datadog-agent:
-    image: datadog/agent:latest
-    environment:
-      - DD_API_KEY=f3329703b0d4f5d447ff820847c092e8
-      - DD_SITE=us5.datadoghq.com
-      - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
-      
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /proc/:/host/proc/:ro
-      - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
-      - ./datadog/conf.d:/etc/datadog-agent/conf.d:ro
-    networks:
-      - haproxy-net
+   image: datadog/agent:latest
+   environment:
+    # Configuración básica
+    - DD_API_KEY=f3329703b0d4f5d447ff820847c092e8
+    - DD_SITE=us5.datadoghq.com
+    
+    # Logs
+    - DD_LOGS_ENABLED=true
+    - DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true
+    - DD_AC_EXCLUDE=name:datadog-agent
+    
+    # Métricas
+    - DD_DOGSTATSD_NON_LOCAL_TRAFFIC=true
+    - DD_PROCESS_AGENT_ENABLED=true
+    - DD_CONTAINER_EXCLUDE=name:datadog-agent
+    
+    # Trazas APM
+    - DD_APM_ENABLED=true
+    - DD_APM_NON_LOCAL_TRAFFIC=true
+    
+    # Seguridad
+    - DD_RUNTIME_SECURITY_CONFIG_ENABLED=true
+    
+    # Network
+    - DD_SYSTEM_PROBE_NETWORK_ENABLED=true
+    
+    # Custom tags
+    - DD_TAGS=env:production,cluster:proyectofinal,team:infrastructure
+
+   volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /proc/:/host/proc/:ro
+    - /sys/fs/cgroup/:/host/sys/fs/cgroup:ro
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - ./datadog/conf.d:/etc/datadog-agent/conf.d:ro
+    
+    # Para system-probe (network monitoring)
+    - /sys/kernel/debug:/sys/kernel/debug:ro
+    
+   cap_add:
+    - SYS_ADMIN
+    - SYS_RESOURCE
+    - SYS_PTRACE
+    - NET_ADMIN
+    - NET_BROADCAST
+    - NET_RAW
+    - IPC_LOCK
+    - AUDIT_CONTROL
+   security_opt:
+    - apparmor:unconfined
+   networks:
+    - haproxy-net
 
   # Existing services (sin cambios)
   backend:
